@@ -1,8 +1,12 @@
 # Sched1PlantsAlwaysGrowMod
 
-A simple Harmony mod for Schedule I that makes plants and shrooms grow even after 4AM.
+A mod for Schedule I that makes plants and shrooms grow even after 4AM.
 
 Compatible with IL2CPP and Mono versions (main and alternate branches) of Schedule I.
+
+The IL2CPP implementation uses a host-only update loop for Schedule I 0.4.6f13;
+the Mono implementation still uses the existing Harmony patches. See
+[IL2CPP behavior, validation and multiplayer limitations](docs/il2cpp-growth.md).
 
 [Nexus Mods Page](https://www.nexusmods.com/schedule1/mods/945)
 
@@ -32,4 +36,3 @@ Compatible with IL2CPP and Mono versions (main and alternate branches) of Schedu
 * Vortex (from DLL): Open Vortex Mod Manager, select game as Schedule I and click on "Mods" tab. Click "Install From File" button and navigate to appropriate dll.
 * Thunderstore/r2modman: Open Thunderstore/r2modman, select game, open or create a profile, then click "Get Mods", and search for "PlantsAlwaysGrow<IL2CPP/Mono>" by lasersquid. Or, navigate [here (mono)](https://thunderstore.io/c/schedule-i/p/lasersquid/PlantsAlwaysGrowMono/) or [here (il2cpp)](https://thunderstore.io/c/schedule-i/p/lasersquid/PlantsAlwaysGrowIL2CPP/), and click "Install with Mod Manager".
 * Manual: Copy PlantsAlwaysGrowIL2CPP.dll/PlantsAlwaysGrowMono.dll from project bin/<IL2CPP|Mono>/net* directory to Schedule I's mods directory.
-

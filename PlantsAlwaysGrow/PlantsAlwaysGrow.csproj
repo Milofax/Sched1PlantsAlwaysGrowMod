@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<ProjName>PlantsAlwaysGrow</ProjName>
 		<Version>1.2.2</Version>
@@ -10,6 +10,7 @@
 	<!-- Conditionally set some properties depending on Configuration. -->
 	<PropertyGroup Condition="'$(Configuration)'=='IL2CPP'">
 		<TargetFramework>net6</TargetFramework>
+		<Version>1.2.3</Version>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)'=='Mono'">
@@ -56,9 +57,6 @@
 	</ItemGroup>
 
 	<ItemGroup Condition="'$(Configuration)'=='IL2CPP'">
-		<Reference Include="0Harmony">
-			<HintPath>il2cpp_libs/0Harmony.dll</HintPath>
-		</Reference>
 		<Reference Include="Assembly-CSharp">
 			<HintPath>il2cpp_libs/Assembly-CSharp.dll</HintPath>
 		</Reference>
@@ -117,18 +115,23 @@
 		<EnableDefaultCompileItems>false</EnableDefaultCompileItems>
 	</PropertyGroup>
 
-	<ItemGroup>
+	<ItemGroup Condition="'$(Configuration)'=='IL2CPP'">
+		<Compile Include="Il2CppMod.cs" />
+		<Compile Include="GrowthPolicy.cs" />
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(Configuration)'=='Mono'">
 		<Compile Include="Mod.cs" />
 		<Compile Include="PlantsAlwaysGrow.cs" />
 	</ItemGroup>
 
-	<ItemGroup>
+	<ItemGroup Condition="'$(Configuration)'=='Mono'">
 		<PackageReference Include="LavaGang.MelonLoader" Version="0.7.0" />
 		<PackageReference Include="Lib.Harmony" Version="2.3.6" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.0.0" />
 	</ItemGroup>
 
-	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
+	<Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(RunPostBuildScripts)' != 'false'">
 		<Exec Command="Powershell ./package_resources/MakeVortexPackage.ps1 -arch $(Configuration) -ver $(Version) -proj $(ProjName)&#xD;&#xA;Powershell ./package_resources/MakeThunderstorePackage.ps1 -arch $(Configuration) -ver $(Version) -proj $(ProjName)&#xD;&#xA;Powershell ./package_resources/DeployMod.ps1 -arch $(Configuration) -proj $(ProjName)&#xD;&#xA;" />
 	</Target>
 </Project>
