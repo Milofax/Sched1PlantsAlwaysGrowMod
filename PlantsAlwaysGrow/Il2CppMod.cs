@@ -8,7 +8,7 @@ using Il2CppScheduleOne.Persistence;
 using MelonLoader;
 using UnityEngine;
 
-[assembly: MelonInfo(typeof(PlantsAlwaysGrow.PlantsAlwaysGrowMod), "PlantsAlwaysGrowMod", "1.2.4", "lasersquid")]
+[assembly: MelonInfo(typeof(PlantsAlwaysGrow.PlantsAlwaysGrowMod), "PlantsAlwaysGrowMod", "1.2.5", "lasersquid")]
 [assembly: MelonGame("TVGS", "Schedule I")]
 
 namespace PlantsAlwaysGrow;
@@ -140,7 +140,8 @@ public sealed class PlantsAlwaysGrowMod : MelonMod
         {
             if (pot == null || !pot.isActiveAndEnabled) continue;
             var plant = pot.Plant;
-            if (plant == null || !plant.isActiveAndEnabled || plant.Pot == null ||
+            // The game hides a plant by deactivating it and still grows it, so its state is not checked.
+            if (plant == null || plant.Pot == null ||
                 plant.Pot.Pointer != pot.Pointer || pot.NormalizedMoistureAmount <= 0) continue;
 
             float before = plant.NormalizedGrowthProgress;
@@ -167,10 +168,13 @@ public sealed class PlantsAlwaysGrowMod : MelonMod
     private static int GrowMushrooms(int minutes)
     {
         int advanced = 0;
-        foreach (var colony in UnityEngine.Object.FindObjectsOfType<ShroomColony>())
+        foreach (var bed in UnityEngine.Object.FindObjectsOfType<MushroomBed>())
         {
-            if (colony == null || !colony.isActiveAndEnabled || colony._parentBed == null ||
-                !colony._parentBed.isActiveAndEnabled || colony.IsFullyGrown) continue;
+            if (bed == null || !bed.isActiveAndEnabled) continue;
+            // A hidden colony is deactivated and a scene search skips it, so it is reached through its bed.
+            var colony = bed.CurrentColony;
+            if (colony == null || colony._parentBed == null ||
+                colony._parentBed.Pointer != bed.Pointer || colony.IsFullyGrown) continue;
 
             colony.CheckTemperature();
             float before = colony.GrowthProgress;

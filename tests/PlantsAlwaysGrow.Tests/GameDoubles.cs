@@ -41,7 +41,8 @@ namespace UnityEngine
         public static T[] FindObjectsOfType<T>() where T : Object
         {
             Scans++;
-            return SceneObjects.OfType<T>().ToArray();
+            // Like Unity, a scene search does not return deactivated objects.
+            return SceneObjects.OfType<T>().Where((o) => o is not MonoBehaviour m || m.isActiveAndEnabled).ToArray();
         }
     }
     public class MonoBehaviour : Object { public bool isActiveAndEnabled = true; }
@@ -102,7 +103,10 @@ namespace Il2CppScheduleOne.ObjectScripts
         public float GetTemperatureGrowthMultiplier() => TemperatureMultiplier;
         public void SetGrowthProgress_Client(float value) => SentValues.Add(value);
     }
-    public sealed class MushroomBed : UnityEngine.MonoBehaviour;
+    public sealed class MushroomBed : UnityEngine.MonoBehaviour
+    {
+        public Il2CppScheduleOne.Growing.ShroomColony? CurrentColony;
+    }
 }
 namespace Il2CppScheduleOne.Growing
 {

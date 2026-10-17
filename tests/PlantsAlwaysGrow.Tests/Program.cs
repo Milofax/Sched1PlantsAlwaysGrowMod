@@ -98,17 +98,38 @@ Test("Newly placed pot is picked up on the next step; harvested pot is skipped",
     UnityEngine.Object.SceneObjects.Add(s.pot); s.mod.OnUpdate(); Near(s.plant.NormalizedGrowthProgress,0.2f+1f/60);
     s.pot.Plant=null; s.mod.OnUpdate(); Require(s.pot.SentValues.Count==1);
 });
-Test("Replaced or inactive plants do not receive growth", () => {
+Test("Replaced plants and plants in inactive pots do not receive growth", () => {
     var s=Setup(); s.plant.Pot=new Pot(); s.mod.OnUpdate(); Near(s.plant.NormalizedGrowthProgress,0.2f);
     s.plant.Pot=s.pot; s.pot.isActiveAndEnabled=false; s.mod.OnUpdate(); Near(s.plant.NormalizedGrowthProgress,0.2f);
+});
+Test("A plant the game has hidden still grows in its active pot", () => {
+    var s=Setup(); s.plant.isActiveAndEnabled=false; s.mod.OnUpdate();
+    Near(s.plant.NormalizedGrowthProgress,0.2f+1f/60); Require(s.pot.SentValues.Count==1);
 });
 Test("Fully grown plants stop at 100 percent with no repeated RPC", () => {
     var s=Setup(); s.plant.NormalizedGrowthProgress=0.999f;
     s.mod.OnUpdate(); s.mod.OnUpdate(); Near(s.plant.NormalizedGrowthProgress,1); Require(s.pot.SentValues.Count==1);
 });
+(MushroomBed bed, ShroomColony colony) Bed()
+{
+    var bed = new MushroomBed();
+    var colony = new ShroomColony { _parentBed = bed };
+    bed.CurrentColony = colony;
+    UnityEngine.Object.SceneObjects.Add(bed);
+    UnityEngine.Object.SceneObjects.Add(colony);
+    return (bed, colony);
+}
 Test("Mushrooms use the host's absolute growth through their existing RPC", () => {
-    var s=Setup(); var c=new ShroomColony(); UnityEngine.Object.SceneObjects.Add(c); s.mod.OnUpdate();
-    Near(c.GrowthProgress,0.2f+1f/60); Require(c.SentValues.Count==1);
+    var s=Setup(); var b=Bed(); s.mod.OnUpdate();
+    Near(b.colony.GrowthProgress,0.2f+1f/60); Require(b.colony.SentValues.Count==1);
+});
+Test("A colony the game has hidden still grows in its active bed", () => {
+    var s=Setup(); var b=Bed(); b.colony.isActiveAndEnabled=false; s.mod.OnUpdate();
+    Near(b.colony.GrowthProgress,0.2f+1f/60); Require(b.colony.SentValues.Count==1);
+});
+Test("Colonies in inactive or other beds do not receive growth", () => {
+    var s=Setup(); var b=Bed(); b.bed.isActiveAndEnabled=false; s.mod.OnUpdate(); Near(b.colony.GrowthProgress,0.2f);
+    b.bed.isActiveAndEnabled=true; b.colony._parentBed=new MushroomBed(); s.mod.OnUpdate(); Near(b.colony.GrowthProgress,0.2f);
 });
 Test("Invalid growth inputs and zero speed never write growth", () => {
     Near(GrowthPolicy.NextProgress(0.2f,1,0,1),0.2f);

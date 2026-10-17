@@ -16,6 +16,17 @@ light calculation and growth multipliers, including the tutorial multiplier,
 and is capped at 100%. Elapsed minutes multiply growth instead of dividing it.
 Mushrooms use their existing temperature and growth-rate calculations.
 
+Schedule I 0.4.7f12 hides plants and mushroom colonies by deactivating their
+objects (`Plant.SetVisible`, `ShroomColony.SetColonyVisible`) and keeps growing
+them: `Pot.OnMinPass` calls `Plant.MinPass` whenever the pot has a plant, and
+neither that nor `ShroomColony.OnMinPass` checks whether the object is active.
+The mod follows the game. It reaches plants through their active pot and
+colonies through their active mushroom bed, and does not skip a hidden one. A
+scene search does not return a deactivated colony at all, which is why colonies
+are found through `MushroomBed.CurrentColony`. 1.2.4 skipped hidden plants and
+searched for colonies directly, so on 0.4.7f12 it grew nothing the game had
+hidden.
+
 The IL2CPP build installs no Harmony patches, inspects no native delegates and
 does not move callbacks between the game's minute-event lists. A managed error
 disables extra growth until the Main scene is loaded again and is logged once.
@@ -85,19 +96,28 @@ dotnet run --project tests/PlantsAlwaysGrow.Tests/PlantsAlwaysGrow.Tests.csproj 
 The tests compile the production update loop and growth policy against managed
 game doubles. They cover daytime inactivity, host/client gating, elapsed time,
 water/light/temperature, multipliers, pause, loading/sleep, scene reload, pot
-replacement/removal, growth caps, mushrooms, invalid inputs and managed failures.
+replacement/removal, hidden plants and colonies, growth caps, mushrooms, invalid
+inputs and managed failures.
 An assertion failure exits the executable with a nonzero status. These are
 regression tests added after the implementation, not a reproduction of a native
 crash or proof of native/network compatibility.
 
 ## Runtime evidence and remaining checks
 
-1.2.4 was run on 2026-10-17 with Schedule I 0.4.7f12 IL2CPP, MelonLoader 0.7.3
-and Proton on Linux. It loaded without an error. With the clock set to 03:55 it
-logged `04:00 growth active; host advanced 0 plants/colonies. Clock remains
-0400.` once, so the clock stopped at 04:00 and growth was allowed; it advanced
-nothing because the only planted pot in that save had no water. Actual growth
-has not yet been observed on 0.4.7f12.
+1.2.5 was run on 2026-10-17 with Schedule I 0.4.7f12 IL2CPP, MelonLoader 0.7.3
+and Proton on Linux, on a test save whose one planted pot (Sour Diesel, plastic
+pot, motel room) had been given water while the player stood in another
+property. With the clock set to 03:55 it logged `04:00 growth active; host
+advanced 1 plants/colonies. Clock remains 0400.` and then `advanced=1` on every
+tick, with no mod error. A diagnostic build of the same code logged the plant as
+hidden and its progress rising from 0.0493 to 0.1167 over 26 game minutes at
+04:00, 0.0026 a minute: one minute of a nine-hour plant at the pot's 1.4 light
+multiplier, the rate the game itself grows it at during the day. The save was
+not written and was restored from a backup afterwards.
+
+1.2.4 had loaded and stopped the clock on the same save but logged `advanced 0`
+every tick: the plant was hidden, and 1.2.4 skipped it. Mushroom growth has not
+been observed on 0.4.7f12; that save has no mushroom bed.
 
 The equivalent local candidate (`1.2.3-local.1`) was tested with Schedule I
 0.4.6f13 IL2CPP, MelonLoader 0.7.3, FullHouse 1.1.0 and Proton Experimental on

@@ -5,7 +5,7 @@ A mod for Schedule I that makes plants and shrooms grow even after 4AM.
 Compatible with IL2CPP and Mono versions (main and alternate branches) of Schedule I.
 
 The IL2CPP implementation uses a host-only update loop for Schedule I 0.4.7f12
-(1.2.4; use 1.2.3 on 0.4.6f13);
+(1.2.5; use 1.2.3 on 0.4.6f13);
 the Mono implementation still uses the existing Harmony patches. See
 [IL2CPP behavior, validation and multiplayer limitations](docs/il2cpp-growth.md).
 
