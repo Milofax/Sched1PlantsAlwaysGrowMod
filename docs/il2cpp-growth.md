@@ -21,6 +21,13 @@ does not move callbacks between the game's minute-event lists. A managed error
 disables extra growth until the Main scene is loaded again and is logged once.
 This cannot catch or prove the absence of a native crash.
 
+The update body lives in its own non-inlined method, so a game member that a
+later update removes fails when that method is compiled, inside the update's
+`try`, and is logged once as well. In 1.2.3 the missing
+`TimeManager.IsSleepInProgress` failed the update method itself on every frame,
+outside the `try`. The managed tests only cover a game call that throws at run
+time; the compile-time path rests on the method split and the 0.4.7f12 run.
+
 ## Multiplayer and saves
 
 Only the host computes extra growth. Plant progress is sent through the game's
@@ -84,6 +91,13 @@ regression tests added after the implementation, not a reproduction of a native
 crash or proof of native/network compatibility.
 
 ## Runtime evidence and remaining checks
+
+1.2.4 was run on 2026-10-17 with Schedule I 0.4.7f12 IL2CPP, MelonLoader 0.7.3
+and Proton on Linux. It loaded without an error. With the clock set to 03:55 it
+logged `04:00 growth active; host advanced 0 plants/colonies. Clock remains
+0400.` once, so the clock stopped at 04:00 and growth was allowed; it advanced
+nothing because the only planted pot in that save had no water. Actual growth
+has not yet been observed on 0.4.7f12.
 
 The equivalent local candidate (`1.2.3-local.1`) was tested with Schedule I
 0.4.6f13 IL2CPP, MelonLoader 0.7.3, FullHouse 1.1.0 and Proton Experimental on

@@ -126,7 +126,7 @@ Test("A missing sleep controller grows nothing and logs nothing", () => {
     for(int i=0;i<30;i++) s.mod.OnUpdate();
     Near(s.plant.NormalizedGrowthProgress,0.2f); Require(s.mod.LoggerInstance.Errors.Count==0);
 });
-Test("A game member removed by an update logs one error, not one per frame", () => {
+Test("A game call that throws logs one error, not one per frame", () => {
     var s=Setup(); s.sleep.Removed=true;
     for(int i=0;i<90;i++) s.mod.OnUpdate();
     Near(s.plant.NormalizedGrowthProgress,0.2f); Require(s.mod.LoggerInstance.Errors.Count==1);
