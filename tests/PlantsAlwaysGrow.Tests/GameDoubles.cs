@@ -66,10 +66,19 @@ namespace Il2CppScheduleOne.GameTime
     public sealed class TimeManager : UnityEngine.Object
     {
         public bool IsEndOfDay = true;
-        public bool IsSleepInProgress;
         public int CurrentTime = 400;
         public float TimeSpeedMultiplier = 1;
         public static float MinuteDuration = 1;
+    }
+    public sealed class SleepController : UnityEngine.Object
+    {
+        public bool Removed;
+        private bool sleeping;
+        public bool IsSleepInProgress
+        {
+            get => Removed ? throw new MissingMethodException("simulated member removed by a game update") : sleeping;
+            set => sleeping = value;
+        }
     }
 }
 namespace Il2CppScheduleOne.ObjectScripts

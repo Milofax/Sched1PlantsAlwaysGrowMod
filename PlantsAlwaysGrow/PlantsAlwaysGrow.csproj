@@ -10,7 +10,7 @@
 	<!-- Conditionally set some properties depending on Configuration. -->
 	<PropertyGroup Condition="'$(Configuration)'=='IL2CPP'">
 		<TargetFramework>net6</TargetFramework>
-		<Version>1.2.3</Version>
+		<Version>1.2.4</Version>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)'=='Mono'">

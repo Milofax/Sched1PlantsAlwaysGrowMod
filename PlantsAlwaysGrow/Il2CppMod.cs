@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using Il2CppFishNet;
 using Il2CppScheduleOne.DevUtilities;
 using Il2CppScheduleOne.GameTime;
@@ -7,7 +8,7 @@ using Il2CppScheduleOne.Persistence;
 using MelonLoader;
 using UnityEngine;
 
-[assembly: MelonInfo(typeof(PlantsAlwaysGrow.PlantsAlwaysGrowMod), "PlantsAlwaysGrowMod", "1.2.3", "lasersquid")]
+[assembly: MelonInfo(typeof(PlantsAlwaysGrow.PlantsAlwaysGrowMod), "PlantsAlwaysGrowMod", "1.2.4", "lasersquid")]
 [assembly: MelonGame("TVGS", "Schedule I")]
 
 namespace PlantsAlwaysGrow;
@@ -65,53 +66,11 @@ public sealed class PlantsAlwaysGrowMod : MelonMod
             return;
         }
 
+        // Game members are bound when Tick is compiled, which happens inside this try:
+        // a member removed by a game update costs one logged error, not one per frame.
         try
         {
-            var loader = Singleton<LoadManager>.Instance;
-            if (loader == null || !loader.IsGameLoaded || loader.IsLoading || !InstanceFinder.IsServer)
-            {
-                ResetClock();
-                return;
-            }
-
-            var time = NetworkSingleton<TimeManager>.Instance;
-            if (time == null)
-            {
-                ResetClock();
-                return;
-            }
-            if (time.Pointer != lastTimeManager)
-            {
-                ResetClock();
-                lastTimeManager = time.Pointer;
-            }
-
-            bool allowed = GrowthPolicy.CanAdvance(true, true, time.IsEndOfDay,
-                time.IsSleepInProgress, time.CurrentTime) && time.TimeSpeedMultiplier > 0;
-            int minutes = clock.Advance(allowed, Time.deltaTime,
-                TimeManager.MinuteDuration / time.TimeSpeedMultiplier);
-            if (!allowed)
-            {
-                nightLogged = false;
-                return;
-            }
-            if (minutes == 0) return;
-
-            // Fresh objects on every growth step: no plant/pot wrappers survive scene loads,
-            // harvesting, replacing pots, or placing new ones.
-            int advanced = GrowPlants(minutes);
-            if (mushrooms.Value) advanced += GrowMushrooms(minutes);
-
-            if (!nightLogged)
-            {
-                LoggerInstance.Msg($"04:00 growth active; host advanced {advanced} plants/colonies. Clock remains {time.CurrentTime:0000}.");
-                nightLogged = true;
-            }
-            if (diagnostics.Value && Time.unscaledTime >= nextDiagnosticTime)
-            {
-                LoggerInstance.Msg($"Growth tick: clock={time.CurrentTime:0000}, minutes={minutes}, advanced={advanced}");
-                nextDiagnosticTime = Time.unscaledTime + 10;
-            }
+            Tick();
         }
         catch (Exception error)
         {
@@ -120,6 +79,57 @@ public sealed class PlantsAlwaysGrowMod : MelonMod
             faulted = true;
             ResetClock();
             LoggerInstance.Error($"Growth disabled for this scene after an error: {error}");
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private void Tick()
+    {
+        var loader = Singleton<LoadManager>.Instance;
+        if (loader == null || !loader.IsGameLoaded || loader.IsLoading || !InstanceFinder.IsServer)
+        {
+            ResetClock();
+            return;
+        }
+
+        var time = NetworkSingleton<TimeManager>.Instance;
+        var sleep = NetworkSingleton<SleepController>.Instance;
+        if (time == null || sleep == null)
+        {
+            ResetClock();
+            return;
+        }
+        if (time.Pointer != lastTimeManager)
+        {
+            ResetClock();
+            lastTimeManager = time.Pointer;
+        }
+
+        bool allowed = GrowthPolicy.CanAdvance(true, true, time.IsEndOfDay,
+            sleep.IsSleepInProgress, time.CurrentTime) && time.TimeSpeedMultiplier > 0;
+        int minutes = clock.Advance(allowed, Time.deltaTime,
+            TimeManager.MinuteDuration / time.TimeSpeedMultiplier);
+        if (!allowed)
+        {
+            nightLogged = false;
+            return;
+        }
+        if (minutes == 0) return;
+
+        // Fresh objects on every growth step: no plant/pot wrappers survive scene loads,
+        // harvesting, replacing pots, or placing new ones.
+        int advanced = GrowPlants(minutes);
+        if (mushrooms.Value) advanced += GrowMushrooms(minutes);
+
+        if (!nightLogged)
+        {
+            LoggerInstance.Msg($"04:00 growth active; host advanced {advanced} plants/colonies. Clock remains {time.CurrentTime:0000}.");
+            nightLogged = true;
+        }
+        if (diagnostics.Value && Time.unscaledTime >= nextDiagnosticTime)
+        {
+            LoggerInstance.Msg($"Growth tick: clock={time.CurrentTime:0000}, minutes={minutes}, advanced={advanced}");
+            nextDiagnosticTime = Time.unscaledTime + 10;
         }
     }
 

@@ -19,7 +19,7 @@ void Require(bool condition, string message = "assertion failed")
     if (!condition) throw new Exception(message);
 }
 void Near(float actual, float expected) => Require(Math.Abs(actual-expected) < 0.00001f, $"expected {expected}, got {actual}");
-(PlantsAlwaysGrowMod mod, Pot pot, Plant plant, TimeManager time, LoadManager loader) Setup()
+(PlantsAlwaysGrowMod mod, Pot pot, Plant plant, TimeManager time, LoadManager loader, SleepController sleep) Setup()
 {
     UnityEngine.Object.SceneObjects.Clear();
     UnityEngine.Object.Scans = 0;
@@ -29,7 +29,9 @@ void Near(float actual, float expected) => Require(Math.Abs(actual-expected) < 0
     InstanceFinder.IsServer = true;
     var time = new TimeManager();
     var loader = new LoadManager();
+    var sleep = new SleepController();
     NetworkSingleton<TimeManager>.Instance = time;
+    NetworkSingleton<SleepController>.Instance = sleep;
     Singleton<LoadManager>.Instance = loader;
     var pot = new Pot();
     var plant = new Plant { Pot = pot };
@@ -38,7 +40,7 @@ void Near(float actual, float expected) => Require(Math.Abs(actual-expected) < 0
     var mod = new PlantsAlwaysGrowMod();
     mod.OnInitializeMelon();
     mod.OnSceneWasLoaded(1,"Main");
-    return (mod,pot,plant,time,loader);
+    return (mod,pot,plant,time,loader,sleep);
 }
 
 Test("Daytime updates never read or update plants", () => {
@@ -80,8 +82,8 @@ Test("A pause produces no growth and no resume catch-up", () => {
 Test("Sleeping and loading reset partial minute credit", () => {
     foreach(bool loading in new[]{false,true}) {
         var s=Setup(); Time.deltaTime=0.5f; s.mod.OnUpdate();
-        if(loading) s.loader.IsLoading=true; else s.time.IsSleepInProgress=true;
-        s.mod.OnUpdate(); s.loader.IsLoading=false; s.time.IsSleepInProgress=false; s.mod.OnUpdate();
+        if(loading) s.loader.IsLoading=true; else s.sleep.IsSleepInProgress=true;
+        s.mod.OnUpdate(); s.loader.IsLoading=false; s.sleep.IsSleepInProgress=false; s.mod.OnUpdate();
         Near(s.plant.NormalizedGrowthProgress,0.2f); s.mod.OnUpdate(); Near(s.plant.NormalizedGrowthProgress,0.2f+1f/60);
     }
 });
@@ -117,6 +119,16 @@ Test("Invalid growth inputs and zero speed never write growth", () => {
 Test("Managed native-wrapper errors disable subsequent updates for this scene", () => {
     var s=Setup(); s.pot.ThrowOnLight=true; s.mod.OnUpdate(); s.pot.ThrowOnLight=false;
     for(int i=0;i<30;i++) s.mod.OnUpdate();
+    Near(s.plant.NormalizedGrowthProgress,0.2f); Require(s.mod.LoggerInstance.Errors.Count==1);
+});
+Test("A missing sleep controller grows nothing and logs nothing", () => {
+    var s=Setup(); NetworkSingleton<SleepController>.Instance=null!;
+    for(int i=0;i<30;i++) s.mod.OnUpdate();
+    Near(s.plant.NormalizedGrowthProgress,0.2f); Require(s.mod.LoggerInstance.Errors.Count==0);
+});
+Test("A game member removed by an update logs one error, not one per frame", () => {
+    var s=Setup(); s.sleep.Removed=true;
+    for(int i=0;i<90;i++) s.mod.OnUpdate();
     Near(s.plant.NormalizedGrowthProgress,0.2f); Require(s.mod.LoggerInstance.Errors.Count==1);
 });
 Test("Large suspend/resume gap is discarded", () => {
